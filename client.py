@@ -15,9 +15,11 @@ def main():
     username = set_username(s)
     print("""- '/users' showing accessible users
 - '/choose_user' choose a user for messaging
+- '/change_username' change your username
 - '/disconnect' disconnect from server""")
 
     while True:
+
         order = input('Enter your order: ')
         send_msg(s, order)
 
@@ -27,9 +29,26 @@ def main():
             show_accessible_users(s)
         elif order == '/choose_user':
             choose_target_user(s)
+        elif order == '/change_username':
+            change_username(s, username)
+        # elif order == 'inbox':
+        #     print(get_msg(s))
 
     # send_msg(s, "HELLO WORLD!!")
     # send_msg(s, "DISCONNECT")
+
+
+def change_username(client, username):
+    new_username = input('Enter new Username: ')
+    send_msg(client, new_username)
+    response = get_msg(client)
+
+    if response == 'free':
+        print("New Username set")
+        return new_username
+    elif response == 'reserved':
+        print("Username reserved")
+        return username
 
 
 def choose_target_user(client):
@@ -50,7 +69,9 @@ def choose_target_user(client):
 
 
 def message_to_user(client, target_user):
-    print(get_msg(client))
+    message = "/message "
+    message += input("Enter your message to {}: ".format(target_user))
+    send_msg(client, message)
 
 
 def show_accessible_users(client):
@@ -73,10 +94,17 @@ def set_username(client):
 
     return username
 
+
 def get_msg(client):
     message_length = int(client.recv(MESSAGE_LENGTH_SIZE).decode(ENCODING))
     msg = client.recv(message_length).decode(ENCODING)
+    # msg_list = msg .split(' ')
+    # if msg_list[0] == '/message':
+    #     print(msg)
+    # else:
+    #     return msg
     return msg
+
 
 def send_msg(client, msg):
 

@@ -42,15 +42,28 @@ def handle_client(conn, address):
 
         if order == '/disconnect':
             print("[CONNECTION CLOSED] connection closed from {}".format(username))
-            user_list.remove([username, address[0], address[1]])
+            user_list.remove([username, address[0], address[1], conn])
             connected = False
         elif order == '/users':
             send_users_list(conn, username)
         elif order == '/choose_user':
             set_target_user(conn)
+        elif order ==  '/change_username':
+            username = change_username(conn, username)
 
     conn.close()
 
+def change_username(client, username):
+    new_username = get_msg(client)
+    if is_username_free(new_username):
+        send_msg(client, "free")
+        for user in user_list:
+            if user[0] == username:
+                user[0] = new_username
+        return new_username
+    else:
+        send_msg(client, "reserved")
+        return username
 
 def set_target_user(client):
     is_target_user_set = False
@@ -66,7 +79,13 @@ def set_target_user(client):
 
 
 def message_to_user(client, target_user):
-    send_msg(client, "you can send message now")
+    message = get_msg(client)
+    target_socket = ""
+    for user in user_list:
+        if user[0] == target_user:
+            target_socket = user[3]
+
+    send_msg(target_socket, message)
 
 
 def send_users_list(client, username):
@@ -82,7 +101,7 @@ def set_username(client, address):
         username = get_msg(client)
         if is_username_free(username):
             send_msg(client, "free")
-            user_list.append([username, address[0], address[1]])
+            user_list.append([username, address[0], address[1], client])
             is_username_set = True
         else:
             send_msg(client, "reserved")
