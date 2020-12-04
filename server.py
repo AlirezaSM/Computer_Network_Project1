@@ -15,6 +15,9 @@ def main():
     s.bind(HOST_INFORMATION)
 
     print("[SERVER STARTS] Server is starting ...")
+    f = open("user_list.txt", "w")
+    f.write("")
+    f.close()
 
     start(s)
 
@@ -25,7 +28,7 @@ def start(server):
 
     while True:
         conn, address = server.accept()
-        t = threading.Thread(target = handle_client, args = (conn, address))
+        t = threading.Thread(target=handle_client, args=(conn, address))
         t.start()
 
 
@@ -37,21 +40,24 @@ def handle_client(conn, address):
 
     connected = True
     while connected:
+
         order = get_msg(conn)
         print("[MESSAGE RECEIVED from {}] {}".format(username, order))
 
         if order == '/disconnect':
             print("[CONNECTION CLOSED] connection closed from {}".format(username))
+            broadcast_message("[USER LEFT] {} left the server".format(username))
             user_list.remove([username, address[0], address[1], conn])
             connected = False
         elif order == '/users':
             send_users_list(conn, username)
         elif order == '/choose_user':
             set_target_user(conn)
-        elif order ==  '/change_username':
+        elif order == '/change_username':
             username = change_username(conn, username)
 
     conn.close()
+
 
 def change_username(client, username):
     new_username = get_msg(client)
@@ -74,18 +80,23 @@ def set_target_user(client):
             send_msg(client, "connected")
             is_username_set = True
             message_to_user(client, target_user)
+            break
         else:
             send_msg(client, "user not found")
+            break
 
 
 def message_to_user(client, target_user):
-    message = get_msg(client)
+    msg = get_msg(client)
+
     target_socket = ""
     for user in user_list:
         if user[0] == target_user:
             target_socket = user[3]
 
-    send_msg(target_socket, message)
+    msg_list = msg.split(' ')
+    if msg_list[0] == '/message':
+        send_msg(target_socket, msg)
 
 
 def send_users_list(client, username):
@@ -101,12 +112,19 @@ def set_username(client, address):
         username = get_msg(client)
         if is_username_free(username):
             send_msg(client, "free")
+            broadcast_message("[NEW USER] {} joined to the server".format(username))
             user_list.append([username, address[0], address[1], client])
             is_username_set = True
         else:
             send_msg(client, "reserved")
 
     return username
+
+
+def broadcast_message(message):
+    for user in user_list:
+        send_msg(user[3], "/message " + message)
+
 
 def is_username_free(username):
     is_free = True
